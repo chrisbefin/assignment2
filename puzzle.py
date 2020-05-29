@@ -2,6 +2,10 @@ import argparse
 from time import perf_counter
 import multiprocessing
 
+class Puzzle_MC(object):
+    def __init__(self):
+        return
+        
 def pemdas(fileName, start, end):
     """ This function finds all PEMDAS solutions to the Vietnamese puzzle by iterating all possible numbers with the first number being in the range start-end. Solutions are written to the specified output file. Upon completion, a summary is printed to terminal specifying the number of solutions found and the time taken.
         arguments:
@@ -114,21 +118,24 @@ def sequential(fileName,start,end):
     print("{} checks performed and {} sequential solutions found and recorded in {} seconds".format(total_checks, num_solutions, time_end-time_start)) # print summary to terminal
 
 def main():
-    start = perf_counter()
+    start = perf_counter() # time start
     parser = argparse.ArgumentParser()
     parser.add_argument("output", help="path to the file that solutions will be written to")
     args = parser.parse_args() # parse command line arguments
     outputFile = args.output
 
     p1 = multiprocessing.Process(target=pemdas, args=(outputFile, 1, 9, ))
-    p2 = multiprocessing.Process(target=sequential, args=(outputFile,1,9, )) # call functions that will find the solutions
-    p1.start()
+    p2 = multiprocessing.Process(target=sequential, args=(outputFile,1,9, )) # create processes
+
+    p1.start() # begin processes
     p2.start()
 
-    p1.join()
+    result = p1.get()
+    print(result)
+    p1.join() # wait for processes to conclude
     p2.join()
 
-    end = perf_counter()
+    end = perf_counter() # time end
 
     print("Time taken: {}".format(end-start))
 if __name__ == "__main__":
