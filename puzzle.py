@@ -4,9 +4,9 @@ import multiprocessing
 
 class Puzzle_MC(object):
     def __init__(self):
-        return
-        
-def pemdas(fileName, start, end):
+        solutions = multiprocessing.Queue()
+
+def pemdas(fileName, solutions, start, end):
     """ This function finds all PEMDAS solutions to the Vietnamese puzzle by iterating all possible numbers with the first number being in the range start-end. Solutions are written to the specified output file. Upon completion, a summary is printed to terminal specifying the number of solutions found and the time taken.
         arguments:
             fileName: <string> the path to the file for solutions to be written to
@@ -17,7 +17,6 @@ def pemdas(fileName, start, end):
     time_start = perf_counter() # begin timer
     starting_numbers = list(range(start,end+1))
     num_solutions = 0 # number of solutions discovered
-    solutions = [] # list of solutions
     total_checks = 0 # number of combinations checked
 
     # the first value iterates over all possibilities specified by the start and end arguments
@@ -52,17 +51,17 @@ def pemdas(fileName, start, end):
                                         total_checks += 1 # increment number of combos checked
                                         if (x1+13*x2/x3+x4+12*x5-x6-11+x7*x8/x9-10 == 66.0000): # check if this combo is a valid solution
                                             num_solutions += 1 # increment number of discovered solutions
-                                            solutions.append([x1,x2,x3,x4,x5,x6,x7,x8,x9]) # add the solution to the list of solutions
-    with open(fileName, mode='a') as WRITE_FILE:
-        WRITE_FILE.write("PEMDAS solutions: \n\n")
-        for solution in solutions: # write every discovered solution to the specified output file
-            WRITE_FILE.write("{}\n".format(solution))
-        WRITE_FILE.write("\n")
+                                            solutions.put([x1,x2,x3,x4,x5,x6,x7,x8,x9]) # add the solution to the list of solutions
+    # with open(fileName, mode='a') as WRITE_FILE:
+    #     WRITE_FILE.write("PEMDAS solutions: \n\n")
+    #     for solution in solutions: # write every discovered solution to the specified output file
+    #         WRITE_FILE.write("{}\n".format(solution))
+    #     WRITE_FILE.write("\n")
     time_end = perf_counter()
     print("{} checks performed and {} PEMDAS solutions found and recorded in {} seconds".format(total_checks, num_solutions, time_end-time_start)) # print summary to the terminal
+    exit(0)
 
-
-def sequential(fileName,start,end):
+def sequential(fileName, solutions, start, end):
     """ This function finds all sequential solutions to the Vietnamese puzzle by iterating all possible numbers with the first number being in the range start-end. Solutions are written to the specified output file. Upon completion, a summary is printed to terminal specifying the number of solutions found and the time taken.
         arguments:
             fileName: <string> the path to the file for solutions to be written to
@@ -71,7 +70,6 @@ def sequential(fileName,start,end):
 
     """
     time_start = perf_counter() # begin timer
-    solutions = [] #list of solutions
     starting_numbers = list(range(start,end+1))
     num_solutions = 0 # number of solutions
     total_checks = 0 # number of possibilities checked
@@ -108,35 +106,38 @@ def sequential(fileName,start,end):
                                         total_checks += 1 # increment the number of checks performed
                                         if (((((((((((((x1+13)*x2)/x3)+x4)+12)*x5)-x6)-11)+x7)*x8)/x9)-10) == 66.0000): # check to see if this solution is valid
                                             num_solutions += 1 # increment the number of solutions
-                                            solutions.append([x1,x2,x3,x4,x5,x6,x7,x8,x9]) # append valid solution to the list of solutions
-    with open(fileName, mode='a') as WRITE_FILE:
-        WRITE_FILE.write("Sequential solutions: \n\n")
-        for solution in solutions:
-            WRITE_FILE.write("{}\n".format(solution)) # write all discovered solutions to the specified output file
-        WRITE_FILE.write("\n")
+                                            solutions.put([x1,x2,x3,x4,x5,x6,x7,x8,x9]) # append valid solution to the list of solutions
+    # with open(fileName, mode='a') as WRITE_FILE:
+    #     WRITE_FILE.write("Sequential solutions: \n\n")
+    #     for solution in solutions:
+    #         WRITE_FILE.write("{}\n".format(solution)) # write all discovered solutions to the specified output file
+    #     WRITE_FILE.write("\n")
     time_end = perf_counter() # time end
     print("{} checks performed and {} sequential solutions found and recorded in {} seconds".format(total_checks, num_solutions, time_end-time_start)) # print summary to terminal
+    exit(0)
 
+def writer(outputFile, queue):
+    while True:
+        while not queue.empty():
+            print(queue.get())
 def main():
     start = perf_counter() # time start
     parser = argparse.ArgumentParser()
     parser.add_argument("output", help="path to the file that solutions will be written to")
     args = parser.parse_args() # parse command line arguments
     outputFile = args.output
-
-    p1 = multiprocessing.Process(target=pemdas, args=(outputFile, 1, 9, ))
-    p2 = multiprocessing.Process(target=sequential, args=(outputFile,1,9, )) # create processes
-
+    queue = multiprocessing.SimpleQueue()
+    p1 = multiprocessing.Process(target=pemdas, args=(outputFile, queue, 1, 9, ))
+    p2 = multiprocessing.Process(target=sequential, args=(outputFile, queue, 1, 9, )) # create processes
+    p3 = multiprocessing.Process(target=writer, args=(outputFile, queue, ))
     p1.start() # begin processes
     p2.start()
+    p3.start()
 
-    result = p1.get()
-    print(result)
     p1.join() # wait for processes to conclude
     p2.join()
-
+    p3.terminate()
     end = perf_counter() # time end
-
     print("Time taken: {}".format(end-start))
 if __name__ == "__main__":
     main()
