@@ -31,7 +31,7 @@ class Puzzle_MP(object):
         self.processCount = cpu_count()
         self.outputFile = outputFile
         self.num_solutions = 0
-        self.numbers = range(start, end+1)
+        self.numbers = list(range(start, end+1))
 
         self.run() # find solutions using multiprocessing
         self.write() # write solutions to output file
@@ -67,10 +67,10 @@ class Puzzle_MP(object):
             returns: None
         """
         processList = [] # list of spawned processes
-        chunks = np.array_split(range(1,10), self.processCount) # divide work into even chunks
+        chunks = np.array_split(range(1,len(self.numbers)+1), self.processCount) # divide work into even chunks
         with Pool(processes=self.processCount) as pool: # create a process pool of size processCount
             for chunk in chunks:
-                processList.append(pool.apply_async(self.find_solutions, args=(chunk[0],chunk[-1], list(self.numbers)))) # create a process for each chunk
+                processList.append(pool.apply_async(self.find_solutions, args=(chunk[0],chunk[-1], self.numbers))) # create a process for each chunk
 
             for process in processList: # for each process
                 outputValue, temp = process.get() # retrieve return value and found solutions from the executed process
